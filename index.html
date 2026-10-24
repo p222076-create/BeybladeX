@@ -2,178 +2,108 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>爆線陀螺X - 立體物理模擬</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>爆線陀螺X - 立體物理模擬 v3</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #0a0a12;
-    color: #e0e0e0;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    overflow: hidden;
-    height: 100vh;
-  }
-  #canvas-container {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background:#0a0a12; color:#e0e0e0; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; overflow:hidden; height:100vh; }
+  #canvas-container { position:fixed; inset:0; }
   #ui {
-    position: fixed;
-    top: 16px; left: 16px;
-    z-index: 10;
-    background: rgba(10, 10, 20, 0.82);
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 16px 20px;
-    min-width: 260px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    position:fixed; top:12px; left:12px; z-index:10;
+    background:rgba(10,10,20,0.86); border:1px solid #2a2a4a; border-radius:12px;
+    padding:14px 16px; width:280px; max-height:calc(100vh - 24px); overflow-y:auto;
+    backdrop-filter:blur(10px); box-shadow:0 8px 32px rgba(0,0,0,0.6);
+    scrollbar-width:thin; scrollbar-color:#3a3a5a transparent;
   }
+  #ui::-webkit-scrollbar { width:6px; }
+  #ui::-webkit-scrollbar-thumb { background:#3a3a5a; border-radius:3px; }
   #ui h1 {
-    font-size: 18px;
-    letter-spacing: 2px;
-    margin-bottom: 4px;
-    background: linear-gradient(90deg, #ff6b35, #ffd23f, #3ec1d3);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size:17px; letter-spacing:2px; margin-bottom:2px;
+    background:linear-gradient(90deg,#ff6b35,#ffd23f,#3ec1d3);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
   }
-  #ui .sub {
-    font-size: 11px;
-    color: #666;
-    margin-bottom: 14px;
-  }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .row label { font-size: 13px; color: #aaa; white-space: nowrap; }
+  #ui .sub { font-size:10px; color:#666; margin-bottom:12px; }
+  .section { border-top:1px solid #1e1e34; padding-top:10px; margin-top:10px; }
+  .section-title { font-size:10px; color:#5a5a7a; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; }
+  .row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .row label { font-size:12px; color:#999; white-space:nowrap; min-width:44px; }
   button {
-    background: #1a1a2e;
-    border: 1px solid #3a3a5a;
-    color: #ccc;
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.15s;
-    flex: 1;
+    background:#1a1a2e; border:1px solid #3a3a5a; color:#ccc;
+    padding:7px 10px; border-radius:7px; cursor:pointer; font-size:12px;
+    transition:all 0.15s; flex:1; font-family:inherit;
   }
-  button:hover { background: #2a2a4a; border-color: #5a5a8a; }
-  button.active {
-    background: linear-gradient(135deg, #ff6b35, #cc4422);
-    border-color: #ff6b35;
-    color: #fff;
-    box-shadow: 0 0 12px rgba(255,107,53,0.4);
-  }
-  input[type=range] {
-    flex: 1;
-    accent-color: #ff6b35;
-    height: 4px;
-  }
-  .val {
-    font-size: 12px;
-    color: #ffd23f;
-    min-width: 36px;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-  }
-  #power-display {
-    font-size: 28px;
-    font-weight: 700;
-    text-align: center;
-    color: #ffd23f;
-    margin: 6px 0 2px;
-    text-shadow: 0 0 20px rgba(255,210,63,0.3);
-  }
-  #power-display small { font-size: 12px; color: #888; font-weight: 400; }
+  button:hover { background:#25253e; border-color:#5a5a8a; }
+  button.active { background:linear-gradient(135deg,#ff6b35,#cc4422); border-color:#ff6b35; color:#fff; box-shadow:0 0 10px rgba(255,107,53,0.35); }
+  button.p2.active { background:linear-gradient(135deg,#ff4d6d,#aa2233); border-color:#ff4d6d; box-shadow:0 0 10px rgba(255,77,109,0.35); }
+  input[type=range] { flex:1; accent-color:#ff6b35; height:4px; cursor:pointer; min-width:0; }
+  input[type=range].p2-range { accent-color:#ff4d6d; }
+  .val { font-size:11px; color:#ffd23f; min-width:34px; text-align:right; font-variant-numeric:tabular-nums; }
+  .power-big { font-size:26px; font-weight:800; text-align:center; color:#ffd23f; margin:4px 0; text-shadow:0 0 18px rgba(255,210,63,0.3); font-variant-numeric:tabular-nums; }
+  .power-big.p2c { color:#ff4d6d; text-shadow:0 0 18px rgba(255,77,109,0.3); }
+  .power-big small { font-size:11px; color:#777; font-weight:400; }
   #launch-btn {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    background: linear-gradient(135deg, #ff6b35, #ffd23f);
-    border: none;
-    color: #111;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-top: 8px;
-    transition: transform 0.1s, box-shadow 0.15s;
+    width:100%; padding:13px; font-size:15px; font-weight:800; letter-spacing:3px;
+    background:linear-gradient(135deg,#ff6b35,#ffd23f); border:none; color:#111;
+    border-radius:9px; cursor:pointer; margin-top:6px;
+    transition:transform 0.08s,box-shadow 0.15s,filter 0.15s; font-family:inherit;
   }
-  #launch-btn:hover { box-shadow: 0 0 24px rgba(255,107,53,0.6); }
-  #launch-btn:active { transform: scale(0.97); }
-  #launch-btn:disabled {
-    background: #2a2a3a;
-    color: #555;
-    cursor: not-allowed;
-    box-shadow: none;
-  }
+  #launch-btn:hover { box-shadow:0 0 22px rgba(255,107,53,0.55); filter:brightness(1.08); }
+  #launch-btn:active { transform:scale(0.97); }
+  #launch-btn:disabled { background:#232336; color:#555; cursor:not-allowed; box-shadow:none; filter:none; }
+  #launch-btn.p2 { background:linear-gradient(135deg,#ff4d6d,#ffd23f); }
   #hud {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 24px;
-    z-index: 10;
-    background: rgba(10,10,20,0.75);
-    padding: 10px 24px;
-    border-radius: 30px;
-    border: 1px solid #2a2a4a;
-    backdrop-filter: blur(6px);
+    position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+    display:flex; gap:20px; z-index:10; background:rgba(10,10,20,0.8);
+    padding:9px 20px; border-radius:30px; border:1px solid #2a2a4a;
+    backdrop-filter:blur(8px); pointer-events:none;
   }
-  .spin-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-  }
-  .dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: #333;
-  }
-  .dot.p1 { background: #3ec1d3; box-shadow: 0 0 10px #3ec1d3; }
-  .dot.p2 { background: #ff4d6d; box-shadow: 0 0 10px #ff4d6d; }
-  .spin-bar {
-    width: 100px; height: 6px;
-    background: #1a1a2e;
-    border-radius: 3px;
-    overflow: hidden;
-  }
-  .spin-bar div {
-    height: 100%;
-    transition: width 0.1s linear;
-    border-radius: 3px;
-  }
-  .p1bar div { background: linear-gradient(90deg, #3ec1d3, #2a8a99); }
-  .p2bar div { background: linear-gradient(90deg, #ff4d6d, #aa2233); }
+  .spin-indicator { display:flex; align-items:center; gap:7px; font-size:12px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#333; transition:all 0.2s; }
+  .dot.p1 { background:#3ec1d3; box-shadow:0 0 10px #3ec1d3; }
+  .dot.p2 { background:#ff4d6d; box-shadow:0 0 10px #ff4d6d; }
+  .dot.dead { background:#333; box-shadow:none; }
+  .spin-bar { width:90px; height:5px; background:#1a1a2e; border-radius:3px; overflow:hidden; }
+  .spin-bar div { height:100%; transition:width 0.1s linear; border-radius:3px; }
+  .p1bar div { background:linear-gradient(90deg,#3ec1d3,#2a8a99); }
+  .p2bar div { background:linear-gradient(90deg,#ff4d6d,#aa2233); }
   #result {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    font-size: 42px;
-    font-weight: 900;
-    letter-spacing: 6px;
-    z-index: 20;
-    pointer-events: none;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    text-shadow: 0 0 40px currentColor;
+    position:fixed; top:45%; left:50%; transform:translate(-50%,-50%) scale(0);
+    font-size:clamp(28px,6vw,48px); font-weight:900; letter-spacing:5px; z-index:20;
+    pointer-events:none; transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    text-shadow:0 0 40px currentColor; white-space:nowrap;
   }
-  #result.show { transform: translate(-50%, -50%) scale(1); }
+  #result.show { transform:translate(-50%,-50%) scale(1); }
   #hint {
-    position: fixed;
-    bottom: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 12px;
-    color: #555;
-    z-index: 10;
-    white-space: nowrap;
+    position:fixed; bottom:62px; left:50%; transform:translateX(-50%);
+    font-size:11px; color:#555; z-index:10; white-space:nowrap; pointer-events:none;
+  }
+  #angle-wrap {
+    position:fixed; top:12px; right:12px; z-index:10; background:rgba(10,10,20,0.8);
+    border:1px solid #2a2a4a; border-radius:12px; padding:10px; width:120px; backdrop-filter:blur(8px);
+  }
+  #angle-dial {
+    width:100px; height:100px; border-radius:50%;
+    background:radial-gradient(circle,#151525 0%,#0d0d18 100%);
+    border:2px solid #2a2a4a; position:relative; margin:0 auto; cursor:pointer; touch-action:none;
+  }
+  #angle-dial .center {
+    position:absolute; top:50%; left:50%; width:8px; height:8px; background:#ff6b35;
+    border-radius:50%; transform:translate(-50%,-50%); box-shadow:0 0 8px #ff6b35;
+  }
+  #angle-dial .pointer {
+    position:absolute; top:50%; left:50%; width:40px; height:3px;
+    background:linear-gradient(90deg,#ff6b35,#ffd23f); border-radius:2px;
+    transform-origin:0 50%; transform:translateY(-50%); box-shadow:0 0 6px rgba(255,107,53,0.6);
+  }
+  #angle-label { text-align:center; font-size:11px; color:#ffd23f; margin-top:6px; }
+  #angle-title { text-align:center; font-size:10px; color:#5a5a7a; margin-bottom:6px; letter-spacing:1px; }
+  @media (max-width:640px) {
+    #ui { width:calc(100vw - 24px); max-height:45vh; }
+    #angle-wrap { top:auto; bottom:100px; right:12px; width:100px; padding:8px; }
+    #angle-dial { width:80px; height:80px; }
+    #hint { display:none; }
+    #hud { gap:12px; padding:8px 14px; }
+    .spin-bar { width:60px; }
   }
 </style>
 </head>
@@ -181,31 +111,59 @@
 <div id="canvas-container"></div>
 
 <div id="ui">
-  <h1>爆線陀螺X</h1>
-  <div class="sub">3D 物理模擬 · 可調拉力</div>
+  <h1>爆線陀螺X v3</h1>
+  <div class="sub">3D 物理模擬 · 碗狀戰鬥盤</div>
 
-  <div class="row">
-    <label>模式</label>
-    <button id="mode-1p" class="active">單人</button>
-    <button id="mode-2p">雙人</button>
-  </div>
-
-  <div id="p2-controls" style="display:none;">
+  <div class="section" style="border-top:none; padding-top:0; margin-top:0;">
+    <div class="section-title">模式</div>
     <div class="row">
-      <label>P2 型號</label>
-      <button id="p2-type-attack" class="active">攻擊</button>
-      <button id="p2-type-stamina">持久</button>
+      <button id="mode-1p" class="active">單人</button>
+      <button id="mode-2p">雙人</button>
     </div>
   </div>
 
-  <div id="power-display">50<small>%</small></div>
-  <div class="row">
-    <label>拉的力度</label>
-    <input type="range" id="power" min="10" max="100" value="50">
-    <span class="val" id="power-val">50%</span>
+  <div class="section">
+    <div class="section-title">陀螺型號</div>
+    <div class="row">
+      <label>P1</label>
+      <button id="p1-attack" class="active">攻擊</button>
+      <button id="p1-stamina">持久</button>
+    </div>
+    <div class="row" id="p2-type-row" style="display:none;">
+      <label>P2</label>
+      <button id="p2-attack" class="active p2">攻擊</button>
+      <button id="p2-stamina" class="p2">持久</button>
+    </div>
+  </div>
+
+  <div class="section" id="p1-power-section">
+    <div class="section-title" id="p1-power-title">P1 拉的力度</div>
+    <div class="power-big" id="power-display-p1">50<small>%</small></div>
+    <div class="row">
+      <input type="range" id="power-p1" min="10" max="100" value="50">
+      <span class="val" id="power-val-p1">50%</span>
+    </div>
+  </div>
+
+  <div class="section" id="p2-power-section" style="display:none;">
+    <div class="section-title">P2 拉的力度</div>
+    <div class="power-big p2c" id="power-display-p2">50<small>%</small></div>
+    <div class="row">
+      <input type="range" id="power-p2" min="10" max="100" value="50" class="p2-range">
+      <span class="val" id="power-val-p2">50%</span>
+    </div>
   </div>
 
   <button id="launch-btn">發 射 ！</button>
+</div>
+
+<div id="angle-wrap">
+  <div id="angle-title">發射角度</div>
+  <div id="angle-dial">
+    <div class="pointer" id="angle-pointer"></div>
+    <div class="center"></div>
+  </div>
+  <div id="angle-label">0°</div>
 </div>
 
 <div id="hud">
@@ -221,7 +179,7 @@
   </div>
 </div>
 
-<div id="hint">拖動滑桿調力度 · 點「發射」開始 · 雙人模式雙方輪流發射</div>
+<div id="hint">拖動滑桿調力度 · 點右側圓盤調角度 · 點「發射」開始 · 雙人模式雙方輪流發射</div>
 <div id="result"></div>
 
 <script type="importmap">
@@ -235,17 +193,49 @@
 <script type="module">
 import * as THREE from 'three';
 
+// ============ 音效 ============
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playTone(freq, dur, type='sine', vol=0.15, slideTo=null) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, audioCtx.currentTime + dur);
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+function sfxLaunch(power) { playTone(180 + power*120, 0.18, 'sawtooth', 0.12, 420 + power*200); }
+function sfxHit(strength) {
+  const v = Math.min(0.22, 0.06 + strength*0.04);
+  playTone(90 + Math.random()*40, 0.08, 'square', v, 50);
+  playTone(300 + Math.random()*200, 0.05, 'triangle', v*0.5);
+}
+function sfxDeath() { playTone(220, 0.4, 'sine', 0.15, 60); }
+function sfxWin() {
+  playTone(523,0.12,'sine',0.12);
+  setTimeout(()=>playTone(659,0.12,'sine',0.12),110);
+  setTimeout(()=>playTone(784,0.25,'sine',0.14),220);
+}
+
 // ============ 場景 ============
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a12);
-scene.fog = new THREE.FogExp2(0x0a0a12, 0.035);
+scene.fog = new THREE.FogExp2(0x0a0a12, 0.032);
 
 const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
-camera.position.set(0, 7, 9);
+camera.position.set(0, 7.5, 9.5);
 camera.lookAt(0, 0, 0);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
@@ -254,113 +244,107 @@ container.appendChild(renderer.domElement);
 
 // 燈光
 scene.add(new THREE.AmbientLight(0x404060, 1.2));
-const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
-keyLight.position.set(5, 12, 5);
-keyLight.castShadow = true;
-keyLight.shadow.mapSize.set(2048, 2048);
-keyLight.shadow.camera.left = -10;
-keyLight.shadow.camera.right = 10;
-keyLight.shadow.camera.top = 10;
-keyLight.shadow.camera.bottom = -10;
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
+keyLight.position.set(5,12,5); keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048,2048);
+keyLight.shadow.camera.left=-10; keyLight.shadow.camera.right=10;
+keyLight.shadow.camera.top=10; keyLight.shadow.camera.bottom=-10;
+keyLight.shadow.bias = -0.0005;
 scene.add(keyLight);
-
-const rimLight = new THREE.DirectionalLight(0x3ec1d3, 1.5);
-rimLight.position.set(-6, 6, -6);
-scene.add(rimLight);
+const rimLight = new THREE.DirectionalLight(0x3ec1d3, 1.6);
+rimLight.position.set(-6,6,-6); scene.add(rimLight);
+const fillLight = new THREE.PointLight(0xff6b35, 0.8, 20);
+fillLight.position.set(0,4,6); scene.add(fillLight);
 
 // 地面
 const groundGeo = new THREE.CircleGeometry(30, 64);
-const groundMat = new THREE.MeshStandardMaterial({
-  color: 0x12121e, roughness: 0.9, metalness: 0.1
-});
+const groundMat = new THREE.MeshStandardMaterial({ color:0x12121e, roughness:0.9, metalness:0.1 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI/2;
-ground.receiveShadow = true;
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true;
 scene.add(ground);
 
-// 戰鬥盤
+// ============ 戰鬥盤（凹陷碗狀） ============
 const stadiumRadius = 4.2;
-const stadiumWallH = 0.45;
+const stadiumDepth = 0.9;
+const stadiumSegments = 64;
 const stadiumGroup = new THREE.Group();
 
-const floorGeo = new THREE.CylinderGeometry(stadiumRadius, stadiumRadius, 0.15, 64);
-const floorMat = new THREE.MeshStandardMaterial({
-  color: 0x1a1a30, roughness: 0.6, metalness: 0.3
-});
-const stadiumFloor = new THREE.Mesh(floorGeo, floorMat);
-stadiumFloor.position.y = 0.075;
-stadiumFloor.receiveShadow = true;
-stadiumGroup.add(stadiumFloor);
+const profilePoints = [];
+const profileSteps = 40;
+for (let i = 0; i <= profileSteps; i++) {
+  const t = i / profileSteps;
+  const r = t * stadiumRadius;
+  const y = stadiumDepth * (t * t);
+  profilePoints.push(new THREE.Vector2(r, y));
+}
+profilePoints.push(new THREE.Vector2(stadiumRadius + 0.08, stadiumDepth));
+profilePoints.push(new THREE.Vector2(stadiumRadius + 0.08, stadiumDepth + 0.35));
 
-const wallGeo = new THREE.CylinderGeometry(stadiumRadius + 0.08, stadiumRadius + 0.08, stadiumWallH, 64, 1, true);
-const wallMat = new THREE.MeshStandardMaterial({
-  color: 0x2a2a50, roughness: 0.4, metalness: 0.6,
-  side: THREE.DoubleSide, transparent: true, opacity: 0.85
+const bowlGeo = new THREE.LatheGeometry(profilePoints, stadiumSegments);
+const bowlMat = new THREE.MeshStandardMaterial({
+  color:0x1a1a30, roughness:0.55, metalness:0.35, side:THREE.DoubleSide
 });
-const wall = new THREE.Mesh(wallGeo, wallMat);
-wall.position.y = stadiumWallH/2 + 0.15;
-stadiumGroup.add(wall);
+const bowl = new THREE.Mesh(bowlGeo, bowlMat);
+bowl.rotation.x = -Math.PI/2;
+bowl.position.y = -stadiumDepth;
+bowl.castShadow = true; bowl.receiveShadow = true;
+stadiumGroup.add(bowl);
 
-// 盤面紋路
+const rimGeo = new THREE.TorusGeometry(stadiumRadius + 0.08, 0.06, 12, 64);
+const rimMat = new THREE.MeshStandardMaterial({ color:0x2a2a50, roughness:0.4, metalness:0.7 });
+const rim = new THREE.Mesh(rimGeo, rimMat);
+rim.rotation.x = Math.PI/2;
+rim.position.y = 0.35;
+stadiumGroup.add(rim);
+
 const ringGeo = new THREE.RingGeometry(stadiumRadius*0.55, stadiumRadius*0.58, 64);
-const ringMat = new THREE.MeshBasicMaterial({ color: 0x3ec1d3, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+const ringMat = new THREE.MeshBasicMaterial({ color:0x3ec1d3, transparent:true, opacity:0.3, side:THREE.DoubleSide });
 const ring = new THREE.Mesh(ringGeo, ringMat);
 ring.rotation.x = -Math.PI/2;
-ring.position.y = 0.155;
+const ringR = stadiumRadius * 0.565;
+const ringT = ringR / stadiumRadius;
+ring.position.y = stadiumDepth * (ringT*ringT) - stadiumDepth + 0.01;
 stadiumGroup.add(ring);
+
+const centerMark = new THREE.RingGeometry(0.15, 0.2, 32);
+const centerMarkMat = new THREE.MeshBasicMaterial({ color:0xff6b35, transparent:true, opacity:0.5, side:THREE.DoubleSide });
+const cm = new THREE.Mesh(centerMark, centerMarkMat);
+cm.rotation.x = -Math.PI/2;
+cm.position.y = -stadiumDepth + 0.01;
+stadiumGroup.add(cm);
 
 scene.add(stadiumGroup);
 
 // ============ 陀螺建模 ============
 function createBeyblade(colorA, colorB, type) {
   const group = new THREE.Group();
-
-  // 底部旋轉軸
   const tipGeo = new THREE.ConeGeometry(0.12, 0.3, 16);
-  const tipMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.9, roughness: 0.2 });
+  const tipMat = new THREE.MeshStandardMaterial({ color:0x888888, metalness:0.9, roughness:0.2 });
   const tip = new THREE.Mesh(tipGeo, tipMat);
-  tip.rotation.x = Math.PI;
-  tip.position.y = 0.15;
-  tip.castShadow = true;
+  tip.rotation.x = Math.PI; tip.position.y = 0.15; tip.castShadow = true;
   group.add(tip);
 
-  // 主體圓環
   const bodyGeo = new THREE.CylinderGeometry(0.55, 0.5, 0.18, 24);
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: colorA, metalness: 0.7, roughness: 0.3
-  });
+  const bodyMat = new THREE.MeshStandardMaterial({ color:colorA, metalness:0.7, roughness:0.3 });
   const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.39;
-  body.castShadow = true;
+  body.position.y = 0.39; body.castShadow = true;
   group.add(body);
 
-  // 外圈
   const ringGeo2 = new THREE.TorusGeometry(0.52, 0.1, 12, 32);
-  const ringMat2 = new THREE.MeshStandardMaterial({
-    color: colorB, metalness: 0.8, roughness: 0.25
-  });
+  const ringMat2 = new THREE.MeshStandardMaterial({ color:colorB, metalness:0.8, roughness:0.25 });
   const outerRing = new THREE.Mesh(ringGeo2, ringMat2);
-  outerRing.rotation.x = Math.PI/2;
-  outerRing.position.y = 0.39;
-  outerRing.castShadow = true;
+  outerRing.rotation.x = Math.PI/2; outerRing.position.y = 0.39; outerRing.castShadow = true;
   group.add(outerRing);
 
-  // 頂蓋
   const capGeo = new THREE.CylinderGeometry(0.32, 0.42, 0.15, 20);
-  const capMat = new THREE.MeshStandardMaterial({
-    color: colorB, metalness: 0.6, roughness: 0.35
-  });
+  const capMat = new THREE.MeshStandardMaterial({ color:colorB, metalness:0.6, roughness:0.35 });
   const cap = new THREE.Mesh(capGeo, capMat);
-  cap.position.y = 0.555;
-  cap.castShadow = true;
+  cap.position.y = 0.555; cap.castShadow = true;
   group.add(cap);
 
-  // 裝飾刃片（依型號不同）
   const bladeCount = type === 'attack' ? 6 : 4;
   const bladeGeo = new THREE.BoxGeometry(0.5, 0.06, 0.12);
-  const bladeMat = new THREE.MeshStandardMaterial({
-    color: 0xdddddd, metalness: 0.95, roughness: 0.15
-  });
+  const bladeMat = new THREE.MeshStandardMaterial({ color:0xdddddd, metalness:0.95, roughness:0.15 });
   for (let i = 0; i < bladeCount; i++) {
     const blade = new THREE.Mesh(bladeGeo, bladeMat);
     const angle = (i / bladeCount) * Math.PI * 2;
@@ -371,208 +355,234 @@ function createBeyblade(colorA, colorB, type) {
     group.add(blade);
   }
 
-  // 型號光環
   const glowGeo = new THREE.TorusGeometry(0.75, 0.02, 8, 40);
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: colorA, transparent: true, opacity: 0.6
-  });
+  const glowMat = new THREE.MeshBasicMaterial({ color:colorA, transparent:true, opacity:0.6 });
   const glow = new THREE.Mesh(glowGeo, glowMat);
-  glow.rotation.x = Math.PI/2;
-  glow.position.y = 0.39;
+  glow.rotation.x = Math.PI/2; glow.position.y = 0.39;
   group.add(glow);
-
   return group;
 }
 
-// ============ 物理參數 ============
+// ============ 粒子火花 ============
+const SPARK_COUNT = 120;
+const sparkGeo = new THREE.BufferGeometry();
+const sparkPositions = new Float32Array(SPARK_COUNT * 3);
+const sparkVelocities = [];
+const sparkLives = new Float32Array(SPARK_COUNT);
+sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+const sparkMat = new THREE.PointsMaterial({
+  color:0xffd23f, size:0.12, transparent:true, opacity:0.9,
+  blending:THREE.AdditiveBlending, depthWrite:false
+});
+const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+scene.add(sparkPoints);
+for (let i = 0; i < SPARK_COUNT; i++) {
+  sparkVelocities.push(new THREE.Vector3());
+  sparkPositions[i*3+1] = -100;
+}
+let sparkIdx = 0;
+function emitSparks(x, y, z, count, strength) {
+  for (let i = 0; i < count; i++) {
+    const idx = sparkIdx % SPARK_COUNT;
+    sparkIdx++;
+    sparkPositions[idx*3] = x;
+    sparkPositions[idx*3+1] = y;
+    sparkPositions[idx*3+2] = z;
+    const speed = 2 + Math.random() * 4 * strength;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    sparkVelocities[idx].set(
+      Math.sin(phi) * Math.cos(theta) * speed,
+      Math.abs(Math.cos(phi)) * speed + 1,
+      Math.sin(phi) * Math.sin(theta) * speed
+    );
+    sparkLives[idx] = 0.4 + Math.random() * 0.4;
+  }
+}
+function updateSparks(dt) {
+  let needsUpdate = false;
+  for (let i = 0; i < SPARK_COUNT; i++) {
+    if (sparkLives[i] > 0) {
+      sparkLives[i] -= dt;
+      sparkVelocities[i].y -= 12 * dt;
+      sparkPositions[i*3] += sparkVelocities[i].x * dt;
+      sparkPositions[i*3+1] += sparkVelocities[i].y * dt;
+      sparkPositions[i*3+2] += sparkVelocities[i].z * dt;
+      if (sparkLives[i] <= 0 || sparkPositions[i*3+1] < -1) {
+        sparkPositions[i*3+1] = -100;
+        sparkLives[i] = 0;
+      }
+      needsUpdate = true;
+    }
+  }
+  if (needsUpdate) sparkGeo.attributes.position.needsUpdate = true;
+}
+
+// ============ 陀螺物理 ============
 class Spinner {
   constructor(mesh, color, type, isPlayer2) {
-    this.mesh = mesh;
-    this.color = color;
-    this.type = type;
-    this.isPlayer2 = isPlayer2;
-
-    // 位置與速度
+    this.mesh = mesh; this.color = color; this.type = type; this.isPlayer2 = isPlayer2;
     this.pos = new THREE.Vector2(0, 0);
     this.vel = new THREE.Vector2(0, 0);
     this.radius = 0.55;
-
-    // 旋轉
-    this.spinSpeed = 0;        // 當前轉速 (rad/s 視覺用)
-    this.spinEnergy = 0;       // 能量條 0~1
+    this.spinSpeed = 0; this.spinEnergy = 0;
     this.angle = 0;
     this.wobblePhase = Math.random() * Math.PI * 2;
     this.wobbleAmp = 0;
-
-    // 狀態
-    this.alive = false;
-    this.tilt = 0;
-    this.vy = 0;
-    this.y = 0.15;
-    this.grounded = false;
+    this.alive = false; this.outOfBounds = false;
+    this.y = 0.15; this.vy = 0; this.grounded = false;
   }
 
   launch(power, angleDeg) {
-    // power: 0~1
     this.alive = true;
+    this.outOfBounds = false;
     this.spinEnergy = 0.35 + power * 0.65;
     this.spinSpeed = 8 + power * 40;
-
-    // 發射速度方向
     const rad = angleDeg * Math.PI / 180;
     const launchSpeed = 1.5 + power * 5.5;
     this.vel.set(Math.cos(rad) * launchSpeed, Math.sin(rad) * launchSpeed);
-
-    this.pos.set(0, 0);
-    this.y = 0.15;
+    this.pos.set(-Math.cos(rad) * 0.3, -Math.sin(rad) * 0.3);
+    // 初始高度依碗面
+    const t0 = Math.min(1, this.pos.length() / stadiumRadius);
+    this.y = stadiumDepth * (t0*t0) - stadiumDepth + 0.15;
     this.vy = 2 + power * 3;
     this.grounded = false;
     this.wobbleAmp = 0.15 + (1 - power) * 0.3;
-    this.tilt = 0;
     this.angle = Math.random() * Math.PI * 2;
   }
 
   update(dt) {
     if (!this.alive) return;
 
-    // 重力與落地
+    // 碗面高度
+    const rNow = this.pos.length();
+    const tNow = Math.min(1, rNow / stadiumRadius);
+    const groundY = stadiumDepth * (tNow * tNow) - stadiumDepth + 0.15;
+
     if (!this.grounded) {
       this.vy -= 14 * dt;
       this.y += this.vy * dt;
-      if (this.y <= 0.15) {
-        this.y = 0.15;
-        this.vy = 0;
-        this.grounded = true;
+      if (this.y <= groundY) {
+        this.y = groundY; this.vy = 0; this.grounded = true;
       }
+    } else {
+      this.y = groundY;
     }
 
-    // 摩擦力（落地後減速）
     if (this.grounded) {
       const friction = this.type === 'stamina' ? 1.8 : 2.4;
       const speed = this.vel.length();
       if (speed > 0.01) {
         const decel = Math.min(friction * dt, speed);
         this.vel.multiplyScalar((speed - decel) / speed);
-      } else {
-        this.vel.set(0, 0);
-      }
+      } else this.vel.set(0, 0);
     }
 
-    // 位置更新
     this.pos.x += this.vel.x * dt;
     this.pos.y += this.vel.y * dt;
 
-    // 邊界碰撞（戰鬥盤圍牆）
+    // 碗壁限制
     const dist = this.pos.length();
-    const maxDist = stadiumRadius - this.radius - 0.15;
+    const maxDist = stadiumRadius - this.radius + 0.02;
     if (dist > maxDist) {
       const nx = this.pos.x / dist;
       const ny = this.pos.y / dist;
       this.pos.set(nx * maxDist, ny * maxDist);
-      // 反彈
       const dot = this.vel.x * nx + this.vel.y * ny;
       this.vel.x -= 2 * dot * nx * 0.65;
       this.vel.y -= 2 * dot * ny * 0.65;
-      this.spinEnergy -= 0.01;
+      this.spinEnergy -= 0.015;
+      emitSparks(this.pos.x, this.y + 0.1, this.pos.y, 3, 0.5);
     }
 
-    // 旋轉能量衰減
     const decayRate = this.type === 'stamina' ? 0.028 : 0.055;
     this.spinEnergy -= decayRate * dt * (1 + this.vel.length() * 0.12);
-    if (this.spinEnergy <= 0) {
-      this.spinEnergy = 0;
-      this.alive = false;
-      return;
-    }
+    if (this.spinEnergy <= 0) { this.spinEnergy = 0; this.alive = false; return; }
 
-    // 視覺旋轉
     this.angle += this.spinSpeed * dt * (0.5 + this.spinEnergy * 0.5);
-
-    // 搖晃
     this.wobblePhase += dt * (3 + this.vel.length() * 2);
     const wobble = Math.sin(this.wobblePhase) * this.wobbleAmp * (1 - this.spinEnergy * 0.7);
-    this.tilt = wobble;
 
-    // 同步到 mesh
     this.mesh.position.set(this.pos.x, this.y, this.pos.y);
     this.mesh.rotation.y = this.angle;
     this.mesh.rotation.z = wobble;
     this.mesh.rotation.x = Math.cos(this.wobblePhase * 1.3) * this.wobbleAmp * 0.5 * (1 - this.spinEnergy);
 
-    // 光環透明度
     const glow = this.mesh.children[this.mesh.children.length - 1];
     if (glow) glow.material.opacity = 0.3 + this.spinEnergy * 0.5;
   }
 }
 
-// 碰撞處理（兩個陀螺）
-function resolveCollision(a, b) {
+// ============ 碰撞（子步進 + 強制分離） ============
+function resolveCollision(a, b, dt) {
   if (!a.alive || !b.alive) return;
-
-  const dx = b.pos.x - a.pos.x;
-  const dy = b.pos.y - a.pos.y;
-  const dist = Math.sqrt(dx*dx + dy*dy);
+  const steps = 3;
   const minDist = a.radius + b.radius;
 
-  if (dist < minDist && dist > 0.001) {
-    const nx = dx / dist;
-    const ny = dy / dist;
-    const overlap = minDist - dist;
+  for (let s = 0; s < steps; s++) {
+    const dx = b.pos.x - a.pos.x;
+    const dy = b.pos.y - a.pos.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
 
-    // 分離
-    a.pos.x -= nx * overlap * 0.5;
-    a.pos.y -= ny * overlap * 0.5;
-    b.pos.x += nx * overlap * 0.5;
-    b.pos.y += ny * overlap * 0.5;
+    if (dist < 0.0001) {
+      const ang = Math.random() * Math.PI * 2;
+      a.pos.x -= Math.cos(ang) * 0.01;
+      a.pos.y -= Math.sin(ang) * 0.01;
+      b.pos.x += Math.cos(ang) * 0.01;
+      b.pos.y += Math.sin(ang) * 0.01;
+      dist = 0.02;
+    }
 
-    // 相對速度
-    const rvx = b.vel.x - a.vel.x;
-    const rvy = b.vel.y - a.vel.y;
-    const velAlongNormal = rvx * nx + rvy * ny;
+    if (dist < minDist) {
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = minDist - dist;
 
-    if (velAlongNormal < 0) {
-      // 攻擊型 vs 其他：攻擊型碰撞時有額外加乘
-      const restitution = 0.85;
-      const j = -(1 + restitution) * velAlongNormal / 2;
+      // 強制分離
+      a.pos.x -= nx * overlap * 0.5;
+      a.pos.y -= ny * overlap * 0.5;
+      b.pos.x += nx * overlap * 0.5;
+      b.pos.y += ny * overlap * 0.5;
 
-      a.vel.x -= nx * j;
-      a.vel.y -= ny * j;
-      b.vel.x += nx * j;
-      b.vel.y += ny * j;
+      const rvx = b.vel.x - a.vel.x;
+      const rvy = b.vel.y - a.vel.y;
+      const velAlongNormal = rvx * nx + rvy * ny;
 
-      // 撞擊能量損失與攻擊加成
-      const impactStrength = Math.abs(velAlongNormal);
-      let aDmg = impactStrength * 0.02;
-      let bDmg = impactStrength * 0.02;
+      if (velAlongNormal < 0) {
+        const restitution = 0.85;
+        const j = -(1 + restitution) * velAlongNormal / 2;
+        a.vel.x -= nx * j; a.vel.y -= ny * j;
+        b.vel.x += nx * j; b.vel.y += ny * j;
 
-      if (a.type === 'attack') bDmg *= 1.6;
-      if (b.type === 'attack') aDmg *= 1.6;
+        const impactStrength = Math.abs(velAlongNormal);
+        let aDmg = impactStrength * 0.02;
+        let bDmg = impactStrength * 0.02;
+        if (a.type === 'attack') bDmg *= 1.6;
+        if (b.type === 'attack') aDmg *= 1.6;
+        a.spinEnergy -= aDmg;
+        b.spinEnergy -= bDmg;
+        a.wobbleAmp = Math.max(0.05, a.wobbleAmp * 0.9);
+        b.wobbleAmp = Math.max(0.05, b.wobbleAmp * 0.9);
 
-      a.spinEnergy -= aDmg;
-      b.spinEnergy -= bDmg;
-
-      // 撞擊時降低搖晃，增加穩定
-      a.wobbleAmp = Math.max(0.05, a.wobbleAmp * 0.9);
-      b.wobbleAmp = Math.max(0.05, b.wobbleAmp * 0.9);
-
-      // 火花效果（簡易：短暫放大光環）
-      const glowA = a.mesh.children[a.mesh.children.length - 1];
-      const glowB = b.mesh.children[b.mesh.children.length - 1];
-      if (glowA) glowA.material.opacity = 1;
-      if (glowB) glowB.material.opacity = 1;
+        const cx = (a.pos.x + b.pos.x) / 2;
+        const cz = (a.pos.y + b.pos.y) / 2;
+        if (impactStrength > 0.5) {
+          emitSparks(cx, 0.3, cz, Math.min(12, Math.floor(impactStrength * 3)), impactStrength);
+          sfxHit(impactStrength);
+        }
+      }
     }
   }
 }
 
 // ============ 遊戲狀態 ============
-let mode = 1; // 1 或 2
+let mode = 1;
 let currentPlayer = 1;
 let p1Type = 'attack';
 let p2Type = 'attack';
 let launchedCount = 0;
 let gameActive = false;
-
-// 陀螺實例
+let launchAngle = 0;
 let p1, p2;
 
 function resetGame() {
@@ -589,25 +599,27 @@ function resetGame() {
     mesh2.scale.set(0.8, 0.8, 0.8);
     scene.add(mesh2);
     p2 = new Spinner(mesh2, 0xff4d6d, p2Type, true);
-  } else {
-    p2 = null;
-  }
+  } else p2 = null;
 
   launchedCount = 0;
   gameActive = false;
   currentPlayer = 1;
   document.getElementById('result').classList.remove('show');
   document.getElementById('bar1').style.width = '100%';
-  if (mode === 2) document.getElementById('bar2').style.width = '100%';
+  document.getElementById('dot1').classList.remove('dead');
+  if (mode === 2) {
+    document.getElementById('bar2').style.width = '100%';
+    document.getElementById('dot2').classList.remove('dead');
+  }
   updateUI();
 }
 
 function updateUI() {
   const launchBtn = document.getElementById('launch-btn');
-
   if (mode === 1) {
     launchBtn.disabled = launchedCount >= 1;
     launchBtn.textContent = launchedCount >= 1 ? '已發射' : '發 射 ！';
+    launchBtn.classList.remove('p2');
   } else {
     if (launchedCount >= 2) {
       launchBtn.disabled = true;
@@ -615,11 +627,13 @@ function updateUI() {
     } else {
       launchBtn.disabled = false;
       launchBtn.textContent = currentPlayer === 1 ? 'P1 發射！' : 'P2 發射！';
+      launchBtn.classList.toggle('p2', currentPlayer === 2);
     }
   }
-
   document.getElementById('p2-hud').style.display = mode === 2 ? 'flex' : 'none';
-  document.getElementById('p2-controls').style.display = mode === 2 ? 'block' : 'none';
+  document.getElementById('p2-type-row').style.display = mode === 2 ? 'flex' : 'none';
+  document.getElementById('p2-power-section').style.display = mode === 2 ? 'block' : 'none';
+  document.getElementById('p1-power-title').textContent = mode === 2 ? 'P1 拉的力度' : '拉的力度';
 }
 
 // ============ 渲染迴圈 ============
@@ -632,18 +646,22 @@ function animate() {
   if (p1) p1.update(dt);
   if (p2) p2.update(dt);
 
-  if (p2) resolveCollision(p1, p2);
-  if (mode === 2 && p1 && p2) resolveCollision(p2, p1);
+  if (mode === 2 && p1 && p2) resolveCollision(p1, p2, dt);
 
-  // 更新能量條
+  updateSparks(dt);
+
   if (p1) document.getElementById('bar1').style.width = (p1.spinEnergy * 100) + '%';
   if (p2) document.getElementById('bar2').style.width = (p2.spinEnergy * 100) + '%';
 
-  // 判定勝負
+  // 圖示熄滅
+  if (p1 && !p1.alive) document.getElementById('dot1').classList.add('dead');
+  if (p2 && !p2.alive) document.getElementById('dot2').classList.add('dead');
+
   if (gameActive) {
     if (mode === 1) {
       if (p1 && !p1.alive) {
         showResult('停 止', '#888');
+        sfxDeath();
         gameActive = false;
         setTimeout(() => { if (mode === 1) resetGame(); }, 1500);
       }
@@ -651,17 +669,14 @@ function animate() {
       const p1Dead = !p1.alive;
       const p2Dead = !p2.alive;
       if (p1Dead && p2Dead) {
-        showResult('平 手', '#ffd23f');
-        gameActive = false;
-        setTimeout(resetGame, 1800);
+        showResult('平 手', '#ffd23f'); sfxDeath();
+        gameActive = false; setTimeout(resetGame, 1800);
       } else if (p1Dead) {
-        showResult('P2 勝 利', '#ff4d6d');
-        gameActive = false;
-        setTimeout(resetGame, 1800);
+        showResult('P2 勝 利', '#ff4d6d'); sfxWin();
+        gameActive = false; setTimeout(resetGame, 1800);
       } else if (p2Dead) {
-        showResult('P1 勝 利', '#3ec1d3');
-        gameActive = false;
-        setTimeout(resetGame, 1800);
+        showResult('P1 勝 利', '#3ec1d3'); sfxWin();
+        gameActive = false; setTimeout(resetGame, 1800);
       }
     }
   }
@@ -669,7 +684,8 @@ function animate() {
   // 相機輕微環繞
   const t = clock.getElapsedTime() * 0.1;
   camera.position.x = Math.sin(t) * 1.5;
-  camera.position.z = 9 + Math.cos(t) * 0.5;
+  camera.position.z = 9.5 + Math.cos(t) * 0.5;
+  camera.position.y = 7.5;
   camera.lookAt(0, 0, 0);
 
   renderer.render(scene, camera);
@@ -677,21 +693,26 @@ function animate() {
 
 function showResult(text, color) {
   const el = document.getElementById('result');
-  el.textContent = text;
-  el.style.color = color;
+  el.textContent = text; el.style.color = color;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 1400);
 }
 
 // ============ UI 事件 ============
-const powerSlider = document.getElementById('power');
-const powerVal = document.getElementById('power-val');
-const powerDisplay = document.getElementById('power-display');
+const powerP1 = document.getElementById('power-p1');
+const powerP2 = document.getElementById('power-p2');
+const powerValP1 = document.getElementById('power-val-p1');
+const powerValP2 = document.getElementById('power-val-p2');
+const powerDisplayP1 = document.getElementById('power-display-p1');
+const powerDisplayP2 = document.getElementById('power-display-p2');
 
-powerSlider.addEventListener('input', () => {
-  const v = powerSlider.value;
-  powerVal.textContent = v + '%';
-  powerDisplay.innerHTML = v + '<small>%</small>';
+powerP1.addEventListener('input', () => {
+  powerValP1.textContent = powerP1.value + '%';
+  powerDisplayP1.innerHTML = powerP1.value + '<small>%</small>';
+});
+powerP2.addEventListener('input', () => {
+  powerValP2.textContent = powerP2.value + '%';
+  powerDisplayP2.innerHTML = powerP2.value + '<small>%</small>';
 });
 
 document.getElementById('mode-1p').addEventListener('click', () => {
@@ -700,7 +721,6 @@ document.getElementById('mode-1p').addEventListener('click', () => {
   document.getElementById('mode-2p').classList.remove('active');
   resetGame();
 });
-
 document.getElementById('mode-2p').addEventListener('click', () => {
   mode = 2;
   document.getElementById('mode-2p').classList.add('active');
@@ -708,42 +728,85 @@ document.getElementById('mode-2p').addEventListener('click', () => {
   resetGame();
 });
 
-document.getElementById('p2-type-attack').addEventListener('click', () => {
+document.getElementById('p1-attack').addEventListener('click', () => {
+  p1Type = 'attack';
+  document.getElementById('p1-attack').classList.add('active');
+  document.getElementById('p1-stamina').classList.remove('active');
+  if (launchedCount === 0) resetGame();
+});
+document.getElementById('p1-stamina').addEventListener('click', () => {
+  p1Type = 'stamina';
+  document.getElementById('p1-stamina').classList.add('active');
+  document.getElementById('p1-attack').classList.remove('active');
+  if (launchedCount === 0) resetGame();
+});
+document.getElementById('p2-attack').addEventListener('click', () => {
   p2Type = 'attack';
-  document.getElementById('p2-type-attack').classList.add('active');
-  document.getElementById('p2-type-stamina').classList.remove('active');
+  document.getElementById('p2-attack').classList.add('active');
+  document.getElementById('p2-stamina').classList.remove('active');
 });
-
-document.getElementById('p2-type-stamina').addEventListener('click', () => {
+document.getElementById('p2-stamina').addEventListener('click', () => {
   p2Type = 'stamina';
-  document.getElementById('p2-type-stamina').classList.add('active');
-  document.getElementById('p2-type-attack').classList.remove('active');
+  document.getElementById('p2-stamina').classList.add('active');
+  document.getElementById('p2-attack').classList.remove('active');
 });
 
-document.getElementById('launch-btn').addEventListener('click', () => {
-  const power = parseInt(powerSlider.value) / 100;
+// 角度圓盤
+const angleDial = document.getElementById('angle-dial');
+const anglePointer = document.getElementById('angle-pointer');
+const angleLabel = document.getElementById('angle-label');
 
+function setAngleFromEvent(e) {
+  const rect = angleDial.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const dx = clientX - cx;
+  const dy = clientY - cy;
+  let deg = Math.atan2(dy, dx) * 180 / Math.PI;
+  launchAngle = deg;
+  anglePointer.style.transform = `rotate(${deg}deg) translateY(-50%)`;
+  angleLabel.textContent = Math.round(deg) + '°';
+}
+
+let angleDragging = false;
+angleDial.addEventListener('pointerdown', (e) => {
+  angleDragging = true;
+  angleDial.setPointerCapture(e.pointerId);
+  setAngleFromEvent(e);
+});
+angleDial.addEventListener('pointermove', (e) => {
+  if (angleDragging) setAngleFromEvent(e);
+});
+angleDial.addEventListener('pointerup', () => { angleDragging = false; });
+angleDial.addEventListener('pointercancel', () => { angleDragging = false; });
+
+// 發射
+document.getElementById('launch-btn').addEventListener('click', () => {
+  initAudio();
   if (mode === 1) {
     if (launchedCount >= 1) return;
-    p1.launch(power, Math.random() * 360);
+    const power = parseInt(powerP1.value) / 100;
+    p1.launch(power, launchAngle);
+    sfxLaunch(power);
     launchedCount = 1;
     gameActive = true;
     updateUI();
   } else {
     if (launchedCount >= 2) return;
-
     if (currentPlayer === 1) {
-      p1.launch(power, 0 + Math.random() * 60 - 30);
+      const power = parseInt(powerP1.value) / 100;
+      p1.launch(power, launchAngle);
+      sfxLaunch(power);
     } else {
-      p2.launch(power, 180 + Math.random() * 60 - 30);
+      const power = parseInt(powerP2.value) / 100;
+      p2.launch(power, launchAngle + 180);
+      sfxLaunch(power);
     }
-
     launchedCount++;
     currentPlayer = currentPlayer === 1 ? 2 : 1;
-
-    if (launchedCount >= 2) {
-      gameActive = true;
-    }
+    if (launchedCount >= 2) gameActive = true;
     updateUI();
   }
 });
