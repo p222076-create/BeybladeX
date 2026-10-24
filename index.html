@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>爆線陀螺X - 立體物理模擬 v3</title>
+<title>爆線陀螺X - 立體物理模擬 最終版</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { background:#0a0a12; color:#e0e0e0; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; overflow:hidden; height:100vh; }
@@ -111,8 +111,8 @@
 <div id="canvas-container"></div>
 
 <div id="ui">
-  <h1>爆線陀螺X v3</h1>
-  <div class="sub">3D 物理模擬 · 碗狀戰鬥盤</div>
+  <h1>爆線陀螺X</h1>
+  <div class="sub">完美凹陷版 · 絕對平躺</div>
 
   <div class="section" style="border-top:none; padding-top:0; margin-top:0;">
     <div class="section-title">模式</div>
@@ -179,7 +179,7 @@
   </div>
 </div>
 
-<div id="hint">拖動滑桿調力度 · 點右側圓盤調角度 · 點「發射」開始 · 雙人模式雙方輪流發射</div>
+<div id="hint">拖動滑桿調力度 · 點右側圓盤調角度 · 點「發射」開始</div>
 <div id="result"></div>
 
 <script type="importmap">
@@ -225,16 +225,16 @@ function sfxWin() {
   setTimeout(()=>playTone(784,0.25,'sine',0.14),220);
 }
 
-// ============ 場景 ============
+// ============ 場景與相機 ============
 const container = document.getElementById('canvas-container');
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a12);
-scene.fog = new THREE.FogExp2(0x0a0a12, 0.032);
+scene.fog = new THREE.FogExp2(0x0a0a12, 0.025);
 
 const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
-// 拉高視角，從斜上方俯視
-camera.position.set(0, 11, 7); 
-camera.lookAt(0, 0, 0);
+// 完美俯視角度，絕對能看出凹陷
+camera.position.set(0, 9, 11);
+camera.lookAt(0, -0.5, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
@@ -244,163 +244,136 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 // 燈光
-scene.add(new THREE.AmbientLight(0x404060, 1.2));
-const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
-keyLight.position.set(5,12,5); keyLight.castShadow = true;
+scene.add(new THREE.AmbientLight(0x606080, 1.5)); // 亮一點，避免全黑
+const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
+keyLight.position.set(5,15,5); keyLight.castShadow = true;
 keyLight.shadow.mapSize.set(2048,2048);
 keyLight.shadow.camera.left=-10; keyLight.shadow.camera.right=10;
 keyLight.shadow.camera.top=10; keyLight.shadow.camera.bottom=-10;
-keyLight.shadow.bias = -0.0005;
 scene.add(keyLight);
-const rimLight = new THREE.DirectionalLight(0x3ec1d3, 1.6);
-rimLight.position.set(-6,6,-6); scene.add(rimLight);
-const fillLight = new THREE.PointLight(0xff6b35, 0.8, 20);
-fillLight.position.set(0,4,6); scene.add(fillLight);
+
+const rimLight = new THREE.DirectionalLight(0x3ec1d3, 2.0);
+rimLight.position.set(-8,5,-8); scene.add(rimLight);
 
 // 地面
 const groundGeo = new THREE.CircleGeometry(30, 64);
-const groundMat = new THREE.MeshStandardMaterial({ color:0x12121e, roughness:0.9, metalness:0.1 });
+const groundMat = new THREE.MeshStandardMaterial({ color:0x0e0e18, roughness:0.9 });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2; ground.receiveShadow = true;
 scene.add(ground);
 
-// ============ 戰鬥盤（凹陷碗狀） ============
-const stadiumRadius = 4.2;
-const stadiumDepth = 0.9;
+// ============ 凹陷戰鬥盤 ============
+const stadiumRadius = 4.5;
+const stadiumDepth = 1.2;
 const stadiumSegments = 64;
 const stadiumGroup = new THREE.Group();
 
+// 1. 碗體 (絕對躺平)
 const profilePoints = [];
-const profileSteps = 40;
+const profileSteps = 50;
 for (let i = 0; i <= profileSteps; i++) {
   const t = i / profileSteps;
   const r = t * stadiumRadius;
   const y = stadiumDepth * (t * t);
   profilePoints.push(new THREE.Vector2(r, y));
 }
-profilePoints.push(new THREE.Vector2(stadiumRadius + 0.08, stadiumDepth));
-profilePoints.push(new THREE.Vector2(stadiumRadius + 0.08, stadiumDepth + 0.35));
+profilePoints.push(new THREE.Vector2(stadiumRadius + 0.1, stadiumDepth));
+profilePoints.push(new THREE.Vector2(stadiumRadius + 0.1, stadiumDepth + 0.4));
 
 const bowlGeo = new THREE.LatheGeometry(profilePoints, stadiumSegments);
 const bowlMat = new THREE.MeshStandardMaterial({
-  color: 0x2a2a45, roughness: 0.4, metalness: 0.6, side: THREE.FrontSide
+  color: 0x2a2a45, roughness: 0.5, metalness: 0.4, side: THREE.FrontSide
 });
 const bowl = new THREE.Mesh(bowlGeo, bowlMat);
-bowl.rotation.x = -Math.PI / 2; // 關鍵：讓碗躺平
+bowl.rotation.x = -Math.PI / 2; // 確保躺平
 bowl.position.y = -stadiumDepth;
-bowl.castShadow = true; bowl.receiveShadow = true;
+bowl.receiveShadow = true;
 stadiumGroup.add(bowl);
 
-// 邊緣裝飾環
-const rimGeo = new THREE.TorusGeometry(stadiumRadius + 0.08, 0.06, 12, 64);
-const rimMat = new THREE.MeshStandardMaterial({ color: 0x2a2a50, roughness: 0.4, metalness: 0.7 });
+// 2. 發光邊緣
+const rimGeo = new THREE.TorusGeometry(stadiumRadius + 0.1, 0.08, 12, 64);
+const rimMat = new THREE.MeshStandardMaterial({ color:0x3ec1d3, emissive:0x3ec1d3, emissiveIntensity:0.8 });
 const rim = new THREE.Mesh(rimGeo, rimMat);
-rim.rotation.x = Math.PI / 2; // 躺平
-rim.position.y = 0.35;
+rim.rotation.x = Math.PI / 2;
+rim.position.y = 0.4;
 stadiumGroup.add(rim);
 
-// 碗底裝飾同心圓（輔助看凹陷）
-const gridMat = new THREE.MeshBasicMaterial({ color: 0x3a3a6a, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
-for (let i = 1; i <= 4; i++) {
-  const r = (stadiumRadius / 5) * i;
+// 3. 碗底同心圓（輔助視覺，讓你明顯看出是凹的）
+const gridMat = new THREE.MeshBasicMaterial({ color: 0x4a4a7a, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+for (let i = 1; i <= 5; i++) {
+  const r = (stadiumRadius / 6) * i;
   const t = r / stadiumRadius;
   const y = stadiumDepth * (t * t) - stadiumDepth + 0.01;
-  const circleGeo = new THREE.RingGeometry(r - 0.02, r + 0.02, 64);
-  const circle = new THREE.Mesh(circleGeo, gridMat);
-  circle.rotation.x = -Math.PI / 2; // 躺平
-  circle.position.y = y;
-  stadiumGroup.add(circle);
-}
-
-// 中心裝飾點
-const centerMark = new THREE.RingGeometry(0.15, 0.2, 32);
-const centerMarkMat = new THREE.MeshBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
-const cm = new THREE.Mesh(centerMark, centerMarkMat);
-cm.rotation.x = -Math.PI / 2; // 躺平
-cm.position.y = -stadiumDepth + 0.01;
-stadiumGroup.add(cm);
-
-scene.add(stadiumGroup);
-// 碗底裝飾同心圓
-const gridMat = new THREE.LineBasicMaterial({ color: 0x3a3a6a, transparent: true, opacity: 0.5 });
-for (let i = 1; i <= 4; i++) {
-  const r = (stadiumRadius / 5) * i;
-  const t = r / stadiumRadius;
-  const y = stadiumDepth * (t * t) - stadiumDepth + 0.01;
-  const circleGeo = new THREE.RingGeometry(r - 0.02, r + 0.02, 64);
+  const circleGeo = new THREE.RingGeometry(r - 0.03, r + 0.03, 64);
   const circle = new THREE.Mesh(circleGeo, gridMat);
   circle.rotation.x = -Math.PI / 2;
   circle.position.y = y;
   stadiumGroup.add(circle);
 }
-// 十字線
-const crossGeo = new THREE.BufferGeometry().setFromPoints([
-  new THREE.Vector3(-stadiumRadius, 0, 0), new THREE.Vector3(stadiumRadius, 0, 0),
-  new THREE.Vector3(0, 0, -stadiumRadius), new THREE.Vector3(0, 0, stadiumRadius)
-]);
-const crossLines = new THREE.LineSegments(crossGeo, gridMat);
-crossLines.position.y = -stadiumDepth + 0.01;
-stadiumGroup.add(crossLines);
- 
+
+// 中心標誌
+const centerMark = new THREE.RingGeometry(0.15, 0.25, 32);
+const centerMarkMat = new THREE.MeshBasicMaterial({ color:0xff6b35, transparent:true, opacity:0.6, side:THREE.DoubleSide });
+const cm = new THREE.Mesh(centerMark, centerMarkMat);
+cm.rotation.x = -Math.PI/2;
+cm.position.y = -stadiumDepth + 0.01;
+stadiumGroup.add(cm);
+
 scene.add(stadiumGroup);
 
 // ============ 陀螺建模 ============
 function createBeyblade(colorA, colorB, type) {
   const group = new THREE.Group();
-  const tipGeo = new THREE.ConeGeometry(0.12, 0.3, 16);
-  const tipMat = new THREE.MeshStandardMaterial({ color:0x888888, metalness:0.9, roughness:0.2 });
+  const tipGeo = new THREE.ConeGeometry(0.15, 0.4, 16);
+  const tipMat = new THREE.MeshStandardMaterial({ color:0xcccccc, metalness:0.9, roughness:0.1 });
   const tip = new THREE.Mesh(tipGeo, tipMat);
-  tip.rotation.x = Math.PI; tip.position.y = 0.15; tip.castShadow = true;
+  tip.rotation.x = Math.PI; tip.position.y = 0.2; tip.castShadow = true;
   group.add(tip);
 
-  const bodyGeo = new THREE.CylinderGeometry(0.55, 0.5, 0.18, 24);
+  const bodyGeo = new THREE.CylinderGeometry(0.65, 0.6, 0.2, 24);
   const bodyMat = new THREE.MeshStandardMaterial({ color:colorA, metalness:0.7, roughness:0.3 });
   const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.39; body.castShadow = true;
+  body.position.y = 0.5; body.castShadow = true;
   group.add(body);
 
-  const ringGeo2 = new THREE.TorusGeometry(0.52, 0.1, 12, 32);
+  const ringGeo2 = new THREE.TorusGeometry(0.6, 0.12, 12, 32);
   const ringMat2 = new THREE.MeshStandardMaterial({ color:colorB, metalness:0.8, roughness:0.25 });
   const outerRing = new THREE.Mesh(ringGeo2, ringMat2);
-  outerRing.rotation.x = Math.PI/2; outerRing.position.y = 0.39; outerRing.castShadow = true;
+  outerRing.rotation.x = Math.PI/2; outerRing.position.y = 0.5; outerRing.castShadow = true;
   group.add(outerRing);
 
-  const capGeo = new THREE.CylinderGeometry(0.32, 0.42, 0.15, 20);
-  const capMat = new THREE.MeshStandardMaterial({ color:colorB, metalness:0.6, roughness:0.35 });
-  const cap = new THREE.Mesh(capGeo, capMat);
-  cap.position.y = 0.555; cap.castShadow = true;
-  group.add(cap);
-
   const bladeCount = type === 'attack' ? 6 : 4;
-  const bladeGeo = new THREE.BoxGeometry(0.5, 0.06, 0.12);
+  const bladeGeo = new THREE.BoxGeometry(0.6, 0.08, 0.15);
   const bladeMat = new THREE.MeshStandardMaterial({ color:0xdddddd, metalness:0.95, roughness:0.15 });
   for (let i = 0; i < bladeCount; i++) {
     const blade = new THREE.Mesh(bladeGeo, bladeMat);
     const angle = (i / bladeCount) * Math.PI * 2;
-    blade.position.set(Math.cos(angle)*0.62, 0.39, Math.sin(angle)*0.62);
+    blade.position.set(Math.cos(angle)*0.7, 0.5, Math.sin(angle)*0.7);
     blade.rotation.y = -angle;
     blade.rotation.z = type === 'attack' ? 0.25 : 0;
     blade.castShadow = true;
     group.add(blade);
   }
 
-  const glowGeo = new THREE.TorusGeometry(0.75, 0.02, 8, 40);
+  const glowGeo = new THREE.TorusGeometry(0.9, 0.03, 8, 40);
   const glowMat = new THREE.MeshBasicMaterial({ color:colorA, transparent:true, opacity:0.6 });
   const glow = new THREE.Mesh(glowGeo, glowMat);
-  glow.rotation.x = Math.PI/2; glow.position.y = 0.39;
+  glow.rotation.x = Math.PI/2; glow.position.y = 0.5;
   group.add(glow);
+  
+  group.scale.set(1.2, 1.2, 1.2);
   return group;
 }
 
 // ============ 粒子火花 ============
-const SPARK_COUNT = 120;
+const SPARK_COUNT = 150;
 const sparkGeo = new THREE.BufferGeometry();
 const sparkPositions = new Float32Array(SPARK_COUNT * 3);
 const sparkVelocities = [];
 const sparkLives = new Float32Array(SPARK_COUNT);
 sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
 const sparkMat = new THREE.PointsMaterial({
-  color:0xffd23f, size:0.12, transparent:true, opacity:0.9,
+  color:0xffd23f, size:0.2, transparent:true, opacity:0.9,
   blending:THREE.AdditiveBlending, depthWrite:false
 });
 const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
@@ -417,12 +390,12 @@ function emitSparks(x, y, z, count, strength) {
     sparkPositions[idx*3] = x;
     sparkPositions[idx*3+1] = y;
     sparkPositions[idx*3+2] = z;
-    const speed = 2 + Math.random() * 4 * strength;
+    const speed = 2 + Math.random() * 5 * strength;
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.random() * Math.PI;
     sparkVelocities[idx].set(
       Math.sin(phi) * Math.cos(theta) * speed,
-      Math.abs(Math.cos(phi)) * speed + 1,
+      Math.abs(Math.cos(phi)) * speed + 2,
       Math.sin(phi) * Math.sin(theta) * speed
     );
     sparkLives[idx] = 0.4 + Math.random() * 0.4;
@@ -437,7 +410,7 @@ function updateSparks(dt) {
       sparkPositions[i*3] += sparkVelocities[i].x * dt;
       sparkPositions[i*3+1] += sparkVelocities[i].y * dt;
       sparkPositions[i*3+2] += sparkVelocities[i].z * dt;
-      if (sparkLives[i] <= 0 || sparkPositions[i*3+1] < -1) {
+      if (sparkLives[i] <= 0 || sparkPositions[i*3+1] < -2) {
         sparkPositions[i*3+1] = -100;
         sparkLives[i] = 0;
       }
@@ -453,28 +426,28 @@ class Spinner {
     this.mesh = mesh; this.color = color; this.type = type; this.isPlayer2 = isPlayer2;
     this.pos = new THREE.Vector2(0, 0);
     this.vel = new THREE.Vector2(0, 0);
-    this.radius = 0.55;
+    this.radius = 0.7;
     this.spinSpeed = 0; this.spinEnergy = 0;
     this.angle = 0;
     this.wobblePhase = Math.random() * Math.PI * 2;
     this.wobbleAmp = 0;
     this.alive = false; this.outOfBounds = false;
-    this.y = 0.15; this.vy = 0; this.grounded = false;
+    this.y = 0.2; this.vy = 0; this.grounded = false;
   }
 
   launch(power, angleDeg) {
     this.alive = true;
     this.outOfBounds = false;
     this.spinEnergy = 0.35 + power * 0.65;
-    this.spinSpeed = 8 + power * 40;
+    this.spinSpeed = 10 + power * 50;
     const rad = angleDeg * Math.PI / 180;
-    const launchSpeed = 1.5 + power * 5.5;
+    const launchSpeed = 2.0 + power * 6.0;
     this.vel.set(Math.cos(rad) * launchSpeed, Math.sin(rad) * launchSpeed);
-    this.pos.set(-Math.cos(rad) * 0.3, -Math.sin(rad) * 0.3);
-    // 初始高度依碗面
+    this.pos.set(-Math.cos(rad) * 0.5, -Math.sin(rad) * 0.5);
+    
     const t0 = Math.min(1, this.pos.length() / stadiumRadius);
-    this.y = stadiumDepth * (t0*t0) - stadiumDepth + 0.15;
-    this.vy = 2 + power * 3;
+    this.y = stadiumDepth * (t0*t0) - stadiumDepth + 0.2;
+    this.vy = 3 + power * 4;
     this.grounded = false;
     this.wobbleAmp = 0.15 + (1 - power) * 0.3;
     this.angle = Math.random() * Math.PI * 2;
@@ -483,13 +456,12 @@ class Spinner {
   update(dt) {
     if (!this.alive) return;
 
-    // 碗面高度
     const rNow = this.pos.length();
     const tNow = Math.min(1, rNow / stadiumRadius);
-    const groundY = stadiumDepth * (tNow * tNow) - stadiumDepth + 0.15;
+    const groundY = stadiumDepth * (tNow * tNow) - stadiumDepth + 0.2;
 
     if (!this.grounded) {
-      this.vy -= 14 * dt;
+      this.vy -= 16 * dt;
       this.y += this.vy * dt;
       if (this.y <= groundY) {
         this.y = groundY; this.vy = 0; this.grounded = true;
@@ -499,7 +471,7 @@ class Spinner {
     }
 
     if (this.grounded) {
-      const friction = this.type === 'stamina' ? 1.8 : 2.4;
+      const friction = this.type === 'stamina' ? 1.5 : 2.0;
       const speed = this.vel.length();
       if (speed > 0.01) {
         const decel = Math.min(friction * dt, speed);
@@ -510,7 +482,6 @@ class Spinner {
     this.pos.x += this.vel.x * dt;
     this.pos.y += this.vel.y * dt;
 
-    // 碗壁限制
     const dist = this.pos.length();
     const maxDist = stadiumRadius - this.radius + 0.02;
     if (dist > maxDist) {
@@ -521,7 +492,7 @@ class Spinner {
       this.vel.x -= 2 * dot * nx * 0.65;
       this.vel.y -= 2 * dot * ny * 0.65;
       this.spinEnergy -= 0.015;
-      emitSparks(this.pos.x, this.y + 0.1, this.pos.y, 3, 0.5);
+      emitSparks(this.pos.x, this.y, this.pos.y, 3, 0.5);
     }
 
     const decayRate = this.type === 'stamina' ? 0.028 : 0.055;
@@ -555,26 +526,18 @@ function resolveCollision(a, b, dt) {
 
     if (dist < 0.0001) {
       const ang = Math.random() * Math.PI * 2;
-      a.pos.x -= Math.cos(ang) * 0.01;
-      a.pos.y -= Math.sin(ang) * 0.01;
-      b.pos.x += Math.cos(ang) * 0.01;
-      b.pos.y += Math.sin(ang) * 0.01;
+      a.pos.x -= Math.cos(ang) * 0.01; a.pos.y -= Math.sin(ang) * 0.01;
+      b.pos.x += Math.cos(ang) * 0.01; b.pos.y += Math.sin(ang) * 0.01;
       dist = 0.02;
     }
 
     if (dist < minDist) {
-      const nx = dx / dist;
-      const ny = dy / dist;
+      const nx = dx / dist; const ny = dy / dist;
       const overlap = minDist - dist;
+      a.pos.x -= nx * overlap * 0.5; a.pos.y -= ny * overlap * 0.5;
+      b.pos.x += nx * overlap * 0.5; b.pos.y += ny * overlap * 0.5;
 
-      // 強制分離
-      a.pos.x -= nx * overlap * 0.5;
-      a.pos.y -= ny * overlap * 0.5;
-      b.pos.x += nx * overlap * 0.5;
-      b.pos.y += ny * overlap * 0.5;
-
-      const rvx = b.vel.x - a.vel.x;
-      const rvy = b.vel.y - a.vel.y;
+      const rvx = b.vel.x - a.vel.x; const rvy = b.vel.y - a.vel.y;
       const velAlongNormal = rvx * nx + rvy * ny;
 
       if (velAlongNormal < 0) {
@@ -588,10 +551,7 @@ function resolveCollision(a, b, dt) {
         let bDmg = impactStrength * 0.02;
         if (a.type === 'attack') bDmg *= 1.6;
         if (b.type === 'attack') aDmg *= 1.6;
-        a.spinEnergy -= aDmg;
-        b.spinEnergy -= bDmg;
-        a.wobbleAmp = Math.max(0.05, a.wobbleAmp * 0.9);
-        b.wobbleAmp = Math.max(0.05, b.wobbleAmp * 0.9);
+        a.spinEnergy -= aDmg; b.spinEnergy -= bDmg;
 
         const cx = (a.pos.x + b.pos.x) / 2;
         const cz = (a.pos.y + b.pos.y) / 2;
@@ -605,12 +565,9 @@ function resolveCollision(a, b, dt) {
 }
 
 // ============ 遊戲狀態 ============
-let mode = 1;
-let currentPlayer = 1;
-let p1Type = 'attack';
-let p2Type = 'attack';
-let launchedCount = 0;
-let gameActive = false;
+let mode = 1; let currentPlayer = 1;
+let p1Type = 'attack'; let p2Type = 'attack';
+let launchedCount = 0; let gameActive = false;
 let launchAngle = 0;
 let p1, p2;
 
@@ -619,20 +576,16 @@ function resetGame() {
   if (p2) scene.remove(p2.mesh);
 
   const mesh1 = createBeyblade(0x3ec1d3, 0x1a6b7a, p1Type);
-  mesh1.scale.set(0.8, 0.8, 0.8);
   scene.add(mesh1);
   p1 = new Spinner(mesh1, 0x3ec1d3, p1Type, false);
 
   if (mode === 2) {
     const mesh2 = createBeyblade(0xff4d6d, 0xaa2233, p2Type);
-    mesh2.scale.set(0.8, 0.8, 0.8);
     scene.add(mesh2);
     p2 = new Spinner(mesh2, 0xff4d6d, p2Type, true);
   } else p2 = null;
 
-  launchedCount = 0;
-  gameActive = false;
-  currentPlayer = 1;
+  launchedCount = 0; gameActive = false; currentPlayer = 1;
   document.getElementById('result').classList.remove('show');
   document.getElementById('bar1').style.width = '100%';
   document.getElementById('dot1').classList.remove('dead');
@@ -682,21 +635,17 @@ function animate() {
   if (p1) document.getElementById('bar1').style.width = (p1.spinEnergy * 100) + '%';
   if (p2) document.getElementById('bar2').style.width = (p2.spinEnergy * 100) + '%';
 
-  // 圖示熄滅
   if (p1 && !p1.alive) document.getElementById('dot1').classList.add('dead');
   if (p2 && !p2.alive) document.getElementById('dot2').classList.add('dead');
 
   if (gameActive) {
     if (mode === 1) {
       if (p1 && !p1.alive) {
-        showResult('停 止', '#888');
-        sfxDeath();
-        gameActive = false;
-        setTimeout(() => { if (mode === 1) resetGame(); }, 1500);
+        showResult('停 止', '#888'); sfxDeath();
+        gameActive = false; setTimeout(() => { if (mode === 1) resetGame(); }, 1500);
       }
     } else {
-      const p1Dead = !p1.alive;
-      const p2Dead = !p2.alive;
+      const p1Dead = !p1.alive; const p2Dead = !p2.alive;
       if (p1Dead && p2Dead) {
         showResult('平 手', '#ffd23f'); sfxDeath();
         gameActive = false; setTimeout(resetGame, 1800);
@@ -710,12 +659,12 @@ function animate() {
     }
   }
 
-  // 相機輕微環繞（高視角）
-  const t = clock.getElapsedTime() * 0.1;
+  // 相機高角度環繞
+  const t = clock.getElapsedTime() * 0.15;
   camera.position.x = Math.sin(t) * 1.5;
-  camera.position.z = 7 + Math.cos(t) * 0.5;
-  camera.position.y = 11;
-  camera.lookAt(0, -0.3, 0); // 看向碗底
+  camera.position.z = 11 + Math.cos(t) * 0.5;
+  camera.position.y = 9;
+  camera.lookAt(0, -0.5, 0);
 
   renderer.render(scene, camera);
 }
@@ -758,25 +707,19 @@ document.getElementById('mode-2p').addEventListener('click', () => {
 });
 
 document.getElementById('p1-attack').addEventListener('click', () => {
-  p1Type = 'attack';
-  document.getElementById('p1-attack').classList.add('active');
-  document.getElementById('p1-stamina').classList.remove('active');
-  if (launchedCount === 0) resetGame();
+  p1Type = 'attack'; document.getElementById('p1-attack').classList.add('active');
+  document.getElementById('p1-stamina').classList.remove('active'); if (launchedCount === 0) resetGame();
 });
 document.getElementById('p1-stamina').addEventListener('click', () => {
-  p1Type = 'stamina';
-  document.getElementById('p1-stamina').classList.add('active');
-  document.getElementById('p1-attack').classList.remove('active');
-  if (launchedCount === 0) resetGame();
+  p1Type = 'stamina'; document.getElementById('p1-stamina').classList.add('active');
+  document.getElementById('p1-attack').classList.remove('active'); if (launchedCount === 0) resetGame();
 });
 document.getElementById('p2-attack').addEventListener('click', () => {
-  p2Type = 'attack';
-  document.getElementById('p2-attack').classList.add('active');
+  p2Type = 'attack'; document.getElementById('p2-attack').classList.add('active');
   document.getElementById('p2-stamina').classList.remove('active');
 });
 document.getElementById('p2-stamina').addEventListener('click', () => {
-  p2Type = 'stamina';
-  document.getElementById('p2-stamina').classList.add('active');
+  p2Type = 'stamina'; document.getElementById('p2-stamina').classList.add('active');
   document.getElementById('p2-attack').classList.remove('active');
 });
 
@@ -801,9 +744,7 @@ function setAngleFromEvent(e) {
 
 let angleDragging = false;
 angleDial.addEventListener('pointerdown', (e) => {
-  angleDragging = true;
-  angleDial.setPointerCapture(e.pointerId);
-  setAngleFromEvent(e);
+  angleDragging = true; angleDial.setPointerCapture(e.pointerId); setAngleFromEvent(e);
 });
 angleDial.addEventListener('pointermove', (e) => {
   if (angleDragging) setAngleFromEvent(e);
@@ -819,22 +760,17 @@ document.getElementById('launch-btn').addEventListener('click', () => {
     const power = parseInt(powerP1.value) / 100;
     p1.launch(power, launchAngle);
     sfxLaunch(power);
-    launchedCount = 1;
-    gameActive = true;
-    updateUI();
+    launchedCount = 1; gameActive = true; updateUI();
   } else {
     if (launchedCount >= 2) return;
     if (currentPlayer === 1) {
       const power = parseInt(powerP1.value) / 100;
-      p1.launch(power, launchAngle);
-      sfxLaunch(power);
+      p1.launch(power, launchAngle); sfxLaunch(power);
     } else {
       const power = parseInt(powerP2.value) / 100;
-      p2.launch(power, launchAngle + 180);
-      sfxLaunch(power);
+      p2.launch(power, launchAngle + 180); sfxLaunch(power);
     }
-    launchedCount++;
-    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    launchedCount++; currentPlayer = currentPlayer === 1 ? 2 : 1;
     if (launchedCount >= 2) gameActive = true;
     updateUI();
   }
