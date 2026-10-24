@@ -231,8 +231,9 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a12);
 scene.fog = new THREE.FogExp2(0x0a0a12, 0.032);
 
-const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.1, 100);
-camera.position.set(0, 7.5, 9.5);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+// 拉高視角，從斜上方俯視
+camera.position.set(0, 11, 7); 
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
@@ -282,7 +283,10 @@ profilePoints.push(new THREE.Vector2(stadiumRadius + 0.08, stadiumDepth + 0.35))
 
 const bowlGeo = new THREE.LatheGeometry(profilePoints, stadiumSegments);
 const bowlMat = new THREE.MeshStandardMaterial({
-  color:0x1a1a30, roughness:0.55, metalness:0.35, side:THREE.DoubleSide
+  color: 0x2a2a45,        // 亮一點的深藍灰色
+  roughness: 0.4, 
+  metalness: 0.6, 
+  side: THREE.FrontSide   // 只渲染正面，避免視覺錯亂
 });
 const bowl = new THREE.Mesh(bowlGeo, bowlMat);
 bowl.rotation.x = -Math.PI/2;
@@ -312,7 +316,27 @@ const cm = new THREE.Mesh(centerMark, centerMarkMat);
 cm.rotation.x = -Math.PI/2;
 cm.position.y = -stadiumDepth + 0.01;
 stadiumGroup.add(cm);
-
+// 碗底裝飾同心圓
+const gridMat = new THREE.LineBasicMaterial({ color: 0x3a3a6a, transparent: true, opacity: 0.5 });
+for (let i = 1; i <= 4; i++) {
+  const r = (stadiumRadius / 5) * i;
+  const t = r / stadiumRadius;
+  const y = stadiumDepth * (t * t) - stadiumDepth + 0.01;
+  const circleGeo = new THREE.RingGeometry(r - 0.02, r + 0.02, 64);
+  const circle = new THREE.Mesh(circleGeo, gridMat);
+  circle.rotation.x = -Math.PI / 2;
+  circle.position.y = y;
+  stadiumGroup.add(circle);
+}
+// 十字線
+const crossGeo = new THREE.BufferGeometry().setFromPoints([
+  new THREE.Vector3(-stadiumRadius, 0, 0), new THREE.Vector3(stadiumRadius, 0, 0),
+  new THREE.Vector3(0, 0, -stadiumRadius), new THREE.Vector3(0, 0, stadiumRadius)
+]);
+const crossLines = new THREE.LineSegments(crossGeo, gridMat);
+crossLines.position.y = -stadiumDepth + 0.01;
+stadiumGroup.add(crossLines);
+ 
 scene.add(stadiumGroup);
 
 // ============ 陀螺建模 ============
@@ -681,12 +705,12 @@ function animate() {
     }
   }
 
-  // 相機輕微環繞
+  // 相機輕微環繞（高視角）
   const t = clock.getElapsedTime() * 0.1;
   camera.position.x = Math.sin(t) * 1.5;
-  camera.position.z = 9.5 + Math.cos(t) * 0.5;
-  camera.position.y = 7.5;
-  camera.lookAt(0, 0, 0);
+  camera.position.z = 7 + Math.cos(t) * 0.5;
+  camera.position.y = 11;
+  camera.lookAt(0, -0.3, 0); // 看向碗底
 
   renderer.render(scene, camera);
 }
