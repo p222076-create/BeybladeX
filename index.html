@@ -283,39 +283,44 @@ profilePoints.push(new THREE.Vector2(stadiumRadius + 0.08, stadiumDepth + 0.35))
 
 const bowlGeo = new THREE.LatheGeometry(profilePoints, stadiumSegments);
 const bowlMat = new THREE.MeshStandardMaterial({
-  color: 0x2a2a45,        // 亮一點的深藍灰色
-  roughness: 0.4, 
-  metalness: 0.6, 
-  side: THREE.FrontSide   // 只渲染正面，避免視覺錯亂
+  color: 0x2a2a45, roughness: 0.4, metalness: 0.6, side: THREE.FrontSide
 });
 const bowl = new THREE.Mesh(bowlGeo, bowlMat);
-bowl.rotation.x = -Math.PI/2;
+bowl.rotation.x = -Math.PI / 2; // 關鍵：讓碗躺平
 bowl.position.y = -stadiumDepth;
 bowl.castShadow = true; bowl.receiveShadow = true;
 stadiumGroup.add(bowl);
 
+// 邊緣裝飾環
 const rimGeo = new THREE.TorusGeometry(stadiumRadius + 0.08, 0.06, 12, 64);
-const rimMat = new THREE.MeshStandardMaterial({ color:0x2a2a50, roughness:0.4, metalness:0.7 });
+const rimMat = new THREE.MeshStandardMaterial({ color: 0x2a2a50, roughness: 0.4, metalness: 0.7 });
 const rim = new THREE.Mesh(rimGeo, rimMat);
-rim.rotation.x = Math.PI/2;
+rim.rotation.x = Math.PI / 2; // 躺平
 rim.position.y = 0.35;
 stadiumGroup.add(rim);
 
-const ringGeo = new THREE.RingGeometry(stadiumRadius*0.55, stadiumRadius*0.58, 64);
-const ringMat = new THREE.MeshBasicMaterial({ color:0x3ec1d3, transparent:true, opacity:0.3, side:THREE.DoubleSide });
-const ring = new THREE.Mesh(ringGeo, ringMat);
-ring.rotation.x = -Math.PI/2;
-const ringR = stadiumRadius * 0.565;
-const ringT = ringR / stadiumRadius;
-ring.position.y = stadiumDepth * (ringT*ringT) - stadiumDepth + 0.01;
-stadiumGroup.add(ring);
+// 碗底裝飾同心圓（輔助看凹陷）
+const gridMat = new THREE.MeshBasicMaterial({ color: 0x3a3a6a, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+for (let i = 1; i <= 4; i++) {
+  const r = (stadiumRadius / 5) * i;
+  const t = r / stadiumRadius;
+  const y = stadiumDepth * (t * t) - stadiumDepth + 0.01;
+  const circleGeo = new THREE.RingGeometry(r - 0.02, r + 0.02, 64);
+  const circle = new THREE.Mesh(circleGeo, gridMat);
+  circle.rotation.x = -Math.PI / 2; // 躺平
+  circle.position.y = y;
+  stadiumGroup.add(circle);
+}
 
+// 中心裝飾點
 const centerMark = new THREE.RingGeometry(0.15, 0.2, 32);
-const centerMarkMat = new THREE.MeshBasicMaterial({ color:0xff6b35, transparent:true, opacity:0.5, side:THREE.DoubleSide });
+const centerMarkMat = new THREE.MeshBasicMaterial({ color: 0xff6b35, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
 const cm = new THREE.Mesh(centerMark, centerMarkMat);
-cm.rotation.x = -Math.PI/2;
+cm.rotation.x = -Math.PI / 2; // 躺平
 cm.position.y = -stadiumDepth + 0.01;
 stadiumGroup.add(cm);
+
+scene.add(stadiumGroup);
 // 碗底裝飾同心圓
 const gridMat = new THREE.LineBasicMaterial({ color: 0x3a3a6a, transparent: true, opacity: 0.5 });
 for (let i = 1; i <= 4; i++) {
